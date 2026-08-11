@@ -1,0 +1,40 @@
+name: Validate PR Source Branch
+
+on:
+  pull_request_target:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - edited
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check source and target branches
+        run: |
+          # Obtém a branch de origem (head) e a branch de destino (base)
+          HEAD_REF="${{ github.head_ref }}"
+          BASE_REF="${{ github.base_ref }}"
+
+          # Regra 1: Para a branch 'main', a origem deve ser 'develop'
+          if [ "$BASE_REF" == "main" ] && [ "$HEAD_REF" != "develop" ]; then
+            echo "❌ Pull requests para 'main' são permitidos apenas a partir da branch 'develop'."
+            exit 1
+          fi
+
+          # Regra 2: Para a branch 'develop', a origem não pode ser 'main' (nem ela mesma)
+          if [ "$BASE_REF" == "develop" ] && [ "$HEAD_REF" == "main" ]; then
+            echo "❌ Pull requests para 'develop' não podem vir da branch 'main'."
+            exit 1
+          fi
+
+          # Regra 3 (opcional): Para 'develop', a origem pode ser qualquer outra branch (feature/*, bugfix/*, etc.)
+          # O código acima já garante que não seja 'main'. Se quiser bloquear também a própria 'develop':
+          # if [ "$BASE_REF" == "develop" ] && [ "$HEAD_REF" == "develop" ]; then
+          #   echo "❌ Pull requests para 'develop' não podem vir da própria 'develop'."
+          #   exit 1
+          # fi
+
+          echo "✅ Validação de origem do PR concluída com sucesso."
